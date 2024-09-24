@@ -34,14 +34,14 @@
                 $.get("/buscar", function (respuesta) {
                     $("#tbodyCursosPagos").html("");
 
-                    for (var x in respuesta) {
-                        var cursoPago = respuesta[x];
+                    // Iterar sobre los registros devueltos
+                    respuesta.data.forEach(function(cursoPago) {
                         $("#tbodyCursosPagos").append(`<tr>
                             <td>${cursoPago[0]}</td>
                             <td>${cursoPago[1]}</td>
                             <td>${cursoPago[2]}</td>
                         </tr>`);
-                    }
+                    });
                 });
             }
 
