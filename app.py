@@ -2,14 +2,15 @@ from flask import Flask, render_template, request, jsonify
 import pusher
 import mysql.connector
 
-con = mysql.connector.connect(
-    host="185.232.14.52",
-    database="u760464709_tst_sep",
-    user="u760464709_tst_sep_usr",
-    password="dJ0CIAFF="
-)
-
 app = Flask(__name__)
+
+def get_db_connection():
+    return mysql.connector.connect(
+        host="185.232.14.52",
+        database="u760464709_tst_sep",
+        user="u760464709_tst_sep_usr",
+        password="dJ0CIAFF="
+    )
 
 @app.route("/")
 def index():
@@ -17,8 +18,7 @@ def index():
 
 @app.route("/buscar", methods=["GET"])
 def buscar():
-    if not con.is_connected():
-        con.reconnect()
+    con = get_db_connection()
     cursor = con.cursor()
     cursor.execute("SELECT * FROM tst0_cursos_pagos")
     registros = cursor.fetchall()
@@ -28,20 +28,21 @@ def buscar():
 @app.route("/registrar", methods=["POST"])
 def registrar():
     args = request.json
-    if not con.is_connected():
-        con.reconnect()
+    con = get_db_connection()
     cursor = con.cursor()
     
     sql = "INSERT INTO tst0_cursos_pagos (Telefono, Archivo) VALUES (%s, %s)"
     val = (args["telefono"], args["archivo"])
     cursor.execute(sql, val)
     con.commit()
-    
+
     curso_pago = {
         "Id_Curso_Pago": cursor.lastrowid,
         "Telefono": args["telefono"],
         "Archivo": args["archivo"]
     }
+    
+    con.close()
     
     pusher_client = pusher.Pusher(
         app_id="1868455",
@@ -56,8 +57,7 @@ def registrar():
 @app.route("/actualizar/<int:id>", methods=["PUT"])
 def actualizar(id):
     args = request.json
-    if not con.is_connected():
-        con.reconnect()
+    con = get_db_connection()
     cursor = con.cursor()
 
     sql = "UPDATE tst0_cursos_pagos SET Telefono = %s, Archivo = %s WHERE Id_Curso_Pago = %s"
@@ -70,8 +70,7 @@ def actualizar(id):
 
 @app.route("/eliminar/<int:id>", methods=["DELETE"])
 def eliminar(id):
-    if not con.is_connected():
-        con.reconnect()
+    con = get_db_connection()
     cursor = con.cursor()
 
     sql = "DELETE FROM tst0_cursos_pagos WHERE Id_Curso_Pago = %s"
