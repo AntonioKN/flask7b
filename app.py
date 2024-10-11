@@ -1,8 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import pusher
 import mysql.connector
-import pytz
-import datetime
 
 con = mysql.connector.connect(
     host="185.232.14.52",
@@ -17,7 +15,7 @@ app = Flask(__name__)
 def index():
     return render_template("app.html")
 
-@app.route("/buscar")
+@app.route("/buscar", methods=["GET"])
 def buscar():
     if not con.is_connected():
         con.reconnect()
@@ -25,7 +23,6 @@ def buscar():
     cursor.execute("SELECT * FROM tst0_cursos_pagos")
     registros = cursor.fetchall()
     con.close()
-
     return jsonify({"data": registros})
 
 @app.route("/registrar", methods=["POST"])
@@ -34,19 +31,18 @@ def registrar():
     if not con.is_connected():
         con.reconnect()
     cursor = con.cursor()
-
+    
     sql = "INSERT INTO tst0_cursos_pagos (Telefono, Archivo) VALUES (%s, %s)"
     val = (args["telefono"], args["archivo"])
     cursor.execute(sql, val)
     con.commit()
-
+    
     curso_pago = {
         "Id_Curso_Pago": cursor.lastrowid,
         "Telefono": args["telefono"],
         "Archivo": args["archivo"]
     }
-
-    # Enviar evento a Pusher
+    
     pusher_client = pusher.Pusher(
         app_id="1868455",
         key="613876ac427a3cc5a9f9",
