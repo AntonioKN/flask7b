@@ -14,6 +14,10 @@
         <form id="formCursoPago">
             <input type="hidden" id="cursoId">
             <div class="mb-3">
+                <label for="idCurso" class="form-label">ID Curso Pago</label>
+                <input type="text" id="idCurso" class="form-control" readonly>
+            </div>
+            <div class="mb-3">
                 <label for="telefono" class="form-label">Teléfono</label>
                 <input type="text" id="telefono" class="form-control" required>
             </div>
@@ -58,6 +62,7 @@
 
         function editar(id, telefono, archivo) {
             $("#cursoId").val(id);
+            $("#idCurso").val(id); // Mostrar ID en el campo
             $("#telefono").val(telefono);
             $("#archivo").val(archivo);
             $("#actualizarBtn").show();
@@ -79,6 +84,7 @@
                     buscar();
                     $("#formCursoPago")[0].reset();
                     $("#actualizarBtn").hide();
+                    $("#idCurso").val(''); // Limpiar el campo de ID
                 }
             });
         }
@@ -91,40 +97,4 @@
                     success: function() {
                         buscar();
                     }
-                });
-            }
-        }
-
-        $(document).ready(function () {
-            buscar();
-
-            $("#formCursoPago").on("submit", function(e) {
-                e.preventDefault();
-                const telefono = $("#telefono").val();
-                const archivo = $("#archivo").val();
-                $.post("/registrar", JSON.stringify({ telefono, archivo }), function() {
-                    buscar();
-                    $("#formCursoPago")[0].reset();
-                }, 'json');
-            });
-
-            Pusher.logToConsole = true;
-            var pusher = new Pusher("613876ac427a3cc5a9f9", {
-                cluster: "us3"
-            });
-            var channel = pusher.subscribe("canalCursosPagos");
-            channel.bind("registroCursoPago", function (cursoPago) {
-                $("#tbodyCursosPagos").prepend(`<tr>
-                    <td>${cursoPago.Id_Curso_Pago}</td>
-                    <td>${cursoPago.Telefono}</td>
-                    <td>${cursoPago.Archivo}</td>
-                    <td>
-                        <button class="btn btn-info btn-sm" onclick="editar(${cursoPago.Id_Curso_Pago}, '${cursoPago.Telefono}', '${cursoPago.Archivo}')">Editar</button>
-                        <button class="btn btn-danger btn-sm" onclick="eliminar(${cursoPago.Id_Curso_Pago})">Eliminar</button>
-                    </td>
-                </tr>`);
-            });
-        });
-    </script>    
-</body>
-</html>
+         
