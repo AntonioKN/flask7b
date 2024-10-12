@@ -25,7 +25,7 @@
                 <label for="archivo" class="form-label">Archivo</label>
                 <input type="text" id="archivo" class="form-control" required>
             </div>
-            <button type="submit" class="btn btn-primary">Registrar</button>
+            <button type="submit" id="btnSubmit" class="btn btn-primary">Registrar</button>
             <button type="button" id="actualizarBtn" class="btn btn-warning" style="display:none;">Actualizar</button>
         </form>
         <table class="table table-sm mt-3">
@@ -67,10 +67,32 @@
             $("#idCurso").val(id);
             $("#telefono").val(telefono);
             $("#archivo").val(archivo);
+            $("#btnSubmit").hide();
             $("#actualizarBtn").show();
-            $("#formCursoPago").off('submit').on('submit', function(e) {
-                e.preventDefault();
+        }
+
+        $("#formCursoPago").on("submit", function(e) {
+            e.preventDefault();
+
+            const id = $("#cursoId").val();
+            const telefono = $("#telefono").val();
+            const archivo = $("#archivo").val();
+
+            if (id) { // Si hay un ID, se está actualizando
                 actualizar(id);
+            } else { // Si no hay ID, se está registrando
+                registrar(telefono, archivo);
+            }
+        });
+
+        function registrar(telefono, archivo) {
+            $.post("/registrar", JSON.stringify({ telefono, archivo }), function() {
+                buscar();
+                $("#formCursoPago")[0].reset();
+                $("#actualizarBtn").hide();
+                $("#btnSubmit").show();
+            }, 'json').fail(function() {
+                alert("Error al registrar el curso");
             });
         }
 
@@ -86,7 +108,7 @@
                     buscar();
                     $("#formCursoPago")[0].reset();
                     $("#actualizarBtn").hide();
-                    $("#idCurso").val('');
+                    $("#btnSubmit").show();
                 },
                 error: function() {
                     alert("Error al actualizar el registro");
@@ -111,18 +133,6 @@
 
         $(document).ready(function () {
             buscar();
-
-            $("#formCursoPago").on("submit", function(e) {
-                e.preventDefault();
-                const telefono = $("#telefono").val();
-                const archivo = $("#archivo").val();
-                $.post("/registrar", JSON.stringify({ telefono, archivo }), function() {
-                    buscar();
-                    $("#formCursoPago")[0].reset();
-                }, 'json').fail(function() {
-                    alert("Error al registrar el curso");
-                });
-            });
 
             Pusher.logToConsole = true;
             var pusher = new Pusher("613876ac427a3cc5a9f9", {
