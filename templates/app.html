@@ -1,154 +1,135 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+
     <title>App</title>
 </head>
 <body>
     <div class="container">
-        <h1>Gestión de Cursos Pagos</h1>
-        <form id="formCursoPago">
-            <input type="hidden" id="cursoId">
-            <div class="mb-3">
-                <label for="idCurso" class="form-label">ID Curso Pago</label>
-                <input type="text" id="idCurso" class="form-control" readonly>
-            </div>
-            <div class="mb-3">
-                <label for="telefono" class="form-label">Teléfono</label>
-                <input type="text" id="telefono" class="form-control" required>
-            </div>
-            <div class="mb-3">
-                <label for="archivo" class="form-label">Archivo</label>
-                <input type="text" id="archivo" class="form-control" required>
-            </div>
-            <button type="submit" id="btnSubmit" class="btn btn-primary">Registrar</button>
-            <button type="button" id="actualizarBtn" class="btn btn-warning" style="display:none;">Actualizar</button>
-        </form>
-        <table class="table table-sm mt-3">
-            <thead>
-                <tr>
-                    <th>Id Curso Pago</th>
-                    <th>Teléfono</th>
-                    <th>Archivo</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="tbodyCursosPagos"></tbody>
-        </table>
+      <h1 class="mt-4 mb-4">Gestión de Cursos Pagos</h1>
+      
+      <form id="formCursoPago" class="mb-4">
+        <div class="mb-3">
+          <label for="telefono" class="form-label">Teléfono</label>
+          <input type="text" class="form-control" id="telefono" required>
+        </div>
+        <div class="mb-3">
+          <label for="archivo" class="form-label">Archivo</label>
+          <input type="text" class="form-control" id="archivo" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </form>
+
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Id Curso Pago</th>
+            <th>Teléfono</th>
+            <th>Archivo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyCursosPagos"></tbody>
+      </table>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
     <script>
-        function buscar() {
-            $.get("/buscar", function (respuesta) {
-                $("#tbodyCursosPagos").html("");
-                respuesta.data.forEach(function(cursoPago) {
-                    $("#tbodyCursosPagos").append(`<tr>
-                        <td>${cursoPago[0]}</td>
-                        <td>${cursoPago[1]}</td>
-                        <td>${cursoPago[2]}</td>
-                        <td>
-                            <button class="btn btn-info btn-sm" onclick="editar(${cursoPago[0]}, '${cursoPago[1]}', '${cursoPago[2]}')">Editar</button>
-                            <button class="btn btn-danger btn-sm" onclick="eliminar(${cursoPago[0]})">Eliminar</button>
-                        </td>
-                    </tr>`);
-                });
-            }).fail(function() {
-                alert("Error al cargar los registros");
-            });
-        }
+        window.addEventListener("load", function (event) {
+            function buscar() {
+                $.get("/buscar", function (respuesta) {
+                    $("#tbodyCursosPagos").html("");
 
-        function editar(id, telefono, archivo) {
-            $("#cursoId").val(id);
-            $("#idCurso").val(id);
-            $("#telefono").val(telefono);
-            $("#archivo").val(archivo);
-            $("#btnSubmit").hide();
-            $("#actualizarBtn").show();
-        }
-
-        $("#formCursoPago").on("submit", function(e) {
-            e.preventDefault();
-
-            const id = $("#cursoId").val();
-            const telefono = $("#telefono").val();
-            const archivo = $("#archivo").val();
-
-            if (id) { // Si hay un ID, se está actualizando
-                actualizar(id);
-            } else { // Si no hay ID, se está registrando
-                registrar(telefono, archivo);
-            }
-        });
-
-        function registrar(telefono, archivo) {
-            $.post("/registrar", JSON.stringify({ telefono, archivo }), function() {
-                buscar();
-                $("#formCursoPago")[0].reset();
-                $("#actualizarBtn").hide();
-                $("#btnSubmit").show();
-            }, 'json').fail(function() {
-                alert("Error al registrar el curso");
-            });
-        }
-
-        function actualizar(id) {
-            const telefono = $("#telefono").val();
-            const archivo = $("#archivo").val();
-            $.ajax({
-                url: `/actualizar/${id}`,
-                type: 'PUT',
-                contentType: 'application/json',
-                data: JSON.stringify({ telefono, archivo }),
-                success: function() {
-                    buscar();
-                    $("#formCursoPago")[0].reset();
-                    $("#actualizarBtn").hide();
-                    $("#btnSubmit").show();
-                },
-                error: function() {
-                    alert("Error al actualizar el registro");
-                }
-            });
-        }
-
-        function eliminar(id) {
-            if (confirm("¿Estás seguro de que deseas eliminar este registro?")) {
-                $.ajax({
-                    url: `/eliminar/${id}`,
-                    type: 'DELETE',
-                    success: function() {
-                        buscar();
-                    },
-                    error: function() {
-                        alert("Error al eliminar el registro");
-                    }
+                    respuesta.forEach(function(cursoPago) {
+                        $("#tbodyCursosPagos").append(`
+                            <tr>
+                                <td>${cursoPago.Id_Curso_Pago}</td>
+                                <td>${cursoPago.Telefono}</td>
+                                <td>${cursoPago.Archivo}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning editar" data-id="${cursoPago.Id_Curso_Pago}">Editar</button>
+                                    <button class="btn btn-sm btn-danger eliminar" data-id="${cursoPago.Id_Curso_Pago}">Eliminar</button>
+                                </td>
+                            </tr>
+                        `);
+                    });
                 });
             }
-        }
 
-        $(document).ready(function () {
             buscar();
 
+            $("#formCursoPago").submit(function(e) {
+                e.preventDefault();
+                let data = {
+                    telefono: $("#telefono").val(),
+                    archivo: $("#archivo").val()
+                };
+
+                $.ajax({
+                    url: "/registrar",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(data),
+                    success: function(response) {
+                        $("#formCursoPago")[0].reset();
+                        buscar();
+                    }
+                });
+            });
+
+            $(document).on("click", ".editar", function() {
+                let id = $(this).data("id");
+                let telefono = $(this).closest("tr").find("td:eq(1)").text();
+                let archivo = $(this).closest("tr").find("td:eq(2)").text();
+
+                $("#telefono").val(telefono);
+                $("#archivo").val(archivo);
+                $("#formCursoPago").attr("data-id", id);
+                $("button[type='submit']").text("Actualizar");
+            });
+
+            $(document).on("click", ".eliminar", function() {
+                let id = $(this).data("id");
+                if (confirm("¿Está seguro de eliminar este registro?")) {
+                    $.ajax({
+                        url: `/eliminar/${id}`,
+                        type: "DELETE",
+                        success: function(response) {
+                            buscar();
+                        }
+                    });
+                }
+            });
+
             Pusher.logToConsole = true;
+            
             var pusher = new Pusher("613876ac427a3cc5a9f9", {
                 cluster: "us3"
             });
+
             var channel = pusher.subscribe("canalCursosPagos");
+
             channel.bind("registroCursoPago", function (cursoPago) {
-                $("#tbodyCursosPagos").prepend(`<tr>
-                    <td>${cursoPago.Id_Curso_Pago}</td>
-                    <td>${cursoPago.Telefono}</td>
-                    <td>${cursoPago.Archivo}</td>
-                    <td>
-                        <button class="btn btn-info btn-sm" onclick="editar(${cursoPago.Id_Curso_Pago}, '${cursoPago.Telefono}', '${cursoPago.Archivo}')">Editar</button>
-                        <button class="btn btn-danger btn-sm" onclick="eliminar(${cursoPago.Id_Curso_Pago})">Eliminar</button>
-                    </td>
-                </tr>`);
+                $("#tbodyCursosPagos").prepend(`
+                    <tr>
+                        <td>${cursoPago.Id_Curso_Pago}</td>
+                        <td>${cursoPago.Telefono}</td>
+                        <td>${cursoPago.Archivo}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning editar" data-id="${cursoPago.Id_Curso_Pago}">Editar</button>
+                            <button class="btn btn-sm btn-danger eliminar" data-id="${cursoPago.Id_Curso_Pago}">Eliminar</button>
+                        </td>
+                    </tr>
+                `);
             });
         });
     </script>    
