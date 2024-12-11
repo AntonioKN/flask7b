@@ -1,96 +1,71 @@
 from flask import Flask, render_template, request, jsonify
 import pusher
-import mysql.connector
+from modelo import ConexionDB, CursoPagoModelo
 
-con = mysql.connector.connect(
-  host="185.232.14.52",
-  database="u760464709_tst_sep",
-  user="u760464709_tst_sep_usr",
-  password="dJ0CIAFF="
-)
-
+# Configuración de la aplicación Flask
 app = Flask(__name__)
 
+# Configuración de Pusher
+pusher_client = pusher.Pusher(
+    app_id="1868455",
+    key="613876ac427a3cc5a9f9",
+    secret="6768ebc9cfd867046a84",
+    cluster="us3",
+    ssl=True
+)
+
+# Ruta para la vista principal
 @app.route("/")
 def index():
     return render_template("app.html")
 
+# Controlador: Buscar registros
 @app.route("/buscar")
 def buscar():
-    if not con.is_connected():
-        con.reconnect()
-    cursor = con.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM tst0_cursos_pagos")
-    
-    registros = cursor.fetchall()
-    con.close()
+    try:
+        registros = CursoPagoModelo.obtener_todos()
+        return jsonify(registros)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    return jsonify(registros)
-
+# Controlador: Registrar un nuevo registro
 @app.route("/registrar", methods=["POST"])
 def registrar():
     data = request.json
 
-    if not con.is_connected():
-        con.reconnect()
-    cursor = con.cursor()
+    try:
+        id_curso_pago = CursoPagoModelo.insertar(data["telefono"], data["archivo"])
+        curso_pago = {
+            "Id_Curso_Pago": id_curso_pago,
+            "Telefono": data["telefono"],
+            "Archivo": data["archivo"]
+        }
+        
+        # Notificar a través de Pusher
+        pusher_client.trigger("canalCursosPagos", "registroCursoPago", curso_pago)
+        return jsonify(curso_pago), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    sql = "INSERT INTO tst0_cursos_pagos (Telefono, Archivo) VALUES (%s, %s)"
-    val = (data["telefono"], data["archivo"])
-    cursor.execute(sql, val)
-    
-    con.commit()
-    id_curso_pago = cursor.lastrowid
-    con.close()
-
-    pusher_client = pusher.Pusher(
-        app_id="1868455",
-        key="613876ac427a3cc5a9f9",
-        secret="6768ebc9cfd867046a84",
-        cluster="us3",
-        ssl=True
-    )
-
-    curso_pago = {
-        "Id_Curso_Pago": id_curso_pago,
-        "Telefono": data["telefono"],
-        "Archivo": data["archivo"]
-    }
-
-    pusher_client.trigger("canalCursosPagos", "registroCursoPago", curso_pago)
-    return jsonify(curso_pago), 201
-
+# Controlador: Actualizar un registro existente
 @app.route("/actualizar/<int:id>", methods=["PUT"])
 def actualizar(id):
     data = request.json
 
-    if not con.is_connected():
-        con.reconnect()
-    cursor = con.cursor()
+    try:
+        CursoPagoModelo.actualizar(id, data["telefono"], data["archivo"])
+        return jsonify({"message": "Registro actualizado exitosamente"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    sql = "UPDATE tst0_cursos_pagos SET Telefono = %s, Archivo = %s WHERE Id_Curso_Pago = %s"
-    val = (data["telefono"], data["archivo"], id)
-    cursor.execute(sql, val)
-    
-    con.commit()
-    con.close()
-
-    return jsonify({"message": "Registro actualizado exitosamente"}), 200
-
+# Controlador: Eliminar un registro
 @app.route("/eliminar/<int:id>", methods=["DELETE"])
 def eliminar(id):
-    if not con.is_connected():
-        con.reconnect()
-    cursor = con.cursor()
-
-    sql = "DELETE FROM tst0_cursos_pagos WHERE Id_Curso_Pago = %s"
-    val = (id,)
-    cursor.execute(sql, val)
-    
-    con.commit()
-    con.close()
-
-    return jsonify({"message": "Registro eliminado exitosamente"}), 200
+    try:
+        CursoPagoModelo.eliminar(id)
+        return jsonify({"message": "Registro eliminado exitosamente"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
